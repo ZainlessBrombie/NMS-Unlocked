@@ -21,9 +21,9 @@ public class ReplacerAgent {
         try {
             VirtualMachine virtualMachine = VirtualMachine.attach(pid);
             String path = Main.class.getProtectionDomain().getCodeSource().getLocation().getFile();
-            System.out.println("PATH ### "+path);
             virtualMachine.loadAgent(path);
             virtualMachine.detach();
+            return;
         } catch (AttachNotSupportedException e) {
             log.severe("Could not attach -> plugin version compatibility not enabled");
             e.printStackTrace();
@@ -37,5 +37,6 @@ public class ReplacerAgent {
             log.severe("Could not attach because of AgentInitializationException. This is unusual. -> plugin version compatibility not enabled");
             e.printStackTrace();
         }
+        throw new RuntimeException("Error!!");
     }
 }

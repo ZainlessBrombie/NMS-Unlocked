@@ -1,9 +1,13 @@
 name: CrossClass
 main: com.zainlessbrombie.mc.crossclass.Main
-version: 0.0-ALPHA
+version: ${pluginVersion}
 authors: [ZainlessBrombie]
 load: STARTUP
 commands:
    crossclass:
       description: Base
       usage: /crossclass
+permissions:
+  crossclass.status:
+    description: Enables full viewing of the plugin status. Anybody who does not have this permission will only see a reduced version.
+    default: op
