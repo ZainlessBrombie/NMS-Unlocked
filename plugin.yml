@@ -1,0 +1,9 @@
+name: CrossClass
+main: com.zainlessbrombie.mc.crossclass.Main
+version: 0.0-ALPHA
+authors: [ZainlessBrombie]
+load: STARTUP
+commands:
+   crossclass:
+      description: Base
+      usage: /crossclass
