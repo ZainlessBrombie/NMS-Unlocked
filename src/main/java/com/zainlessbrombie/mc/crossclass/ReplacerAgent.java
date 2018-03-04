@@ -27,16 +27,19 @@ public class ReplacerAgent {
         } catch (AttachNotSupportedException e) {
             log.severe("Could not attach -> plugin version compatibility not enabled");
             e.printStackTrace();
+            throw new RuntimeException("Could not attach VM");
         } catch (IOException e) {
             log.severe("Could not attach because of IOException -> plugin version compatibility not enabled");
             e.printStackTrace();
+            throw new RuntimeException("Could not attach VM");
         } catch (AgentLoadException e) {
             log.severe("Could not attach because of AgentLoadException. This is unusual. -> plugin version compatibility not enabled");
             e.printStackTrace();
+            throw new RuntimeException("Could not attach VM");
         } catch (AgentInitializationException e) {
             log.severe("Could not attach because of AgentInitializationException. This is unusual. -> plugin version compatibility not enabled");
             e.printStackTrace();
+            throw new RuntimeException("Could not attach VM");
         }
-        throw new RuntimeException("Error!!");
     }
 }

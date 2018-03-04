@@ -96,8 +96,12 @@ public abstract class Constant {
             return ret;
         }
 
+        public String getContentString() {
+            return new String(raw,startPos + 3,length);
+        }
+
         /**
-         * Set the byte array content, of this constant. Does not include the tag and length information.
+         * Set the byte array content of this constant. Does not include the tag and length information.
          */
         public void setContent(byte[] newContent) {
             raw = new byte[newContent.length + 3];
@@ -278,6 +282,20 @@ public abstract class Constant {
             return ret;
         }
 
+        /**
+         * Get the const_pool index of the entry. Not equal to the index in the constants list.
+         */
+        public int getNameIndex() {
+            return (raw[startPos + 1] & 0xff) * 0x100 + (raw[startPos + 2] & 0xff);
+        }
+
+        public Utf8Constant getName() {
+            Constant ret = table.getTableEntry(getNameIndex());
+            if(ret instanceof Utf8Constant)
+                return (Utf8Constant) ret;
+            throw new RuntimeException("Internal class data corruption: Entry at index "+getNameIndex()+" is not of type Utf8Constant. Is "+ret.getClass());
+        }
+
         public static void initClass() {
 
         }
@@ -317,14 +335,14 @@ public abstract class Constant {
             return (raw[startPos + 1] & 0xff) * 0x100 + (raw[startPos + 2] & 0xff);
         }
 
-        public String getReferencedContent() {
+        public Utf8Constant getReferencedString() {
             try {
-                Constant c = table.getConstants().get(getReferenceId() - 1);
+                Constant c = table.getTableEntry(getReferenceId());
                 if(!(c instanceof Utf8Constant))
-                    throw new RuntimeException("Expected constant with id "+getReferenceId()+" to be UTF8Constant, but got "+c);
-                return new String(((Utf8Constant) c).getContent());
+                    throw new RuntimeException("Internal class file corruption: "+getReferenceId()+" should be UTF8Constant, but is "+c.getClass());
+                return (Utf8Constant) c;
             } catch (IndexOutOfBoundsException e) {
-                throw new RuntimeException("Data integrity error: "+getReferenceId()+" not in table of length "+table.getConstants().parallelStream());
+                throw new RuntimeException("Data integrity error: "+getReferenceId()+" not in table of length "+table.getConstants().size());
             }
         }
 

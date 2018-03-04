@@ -7,6 +7,7 @@ import com.zainlessbrombie.reflect.ConstantTable;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -24,9 +25,12 @@ import java.util.stream.Collectors;
 
 
 /**
- * Created by mathis on 02.03.18 22:00.
+ * Copyright ZainlessBrombie 2018
+ * Do not copy or redistribute.
  */
 public class Main extends JavaPlugin {
+
+    private static String DO_NOT_COPY="Thank you :) <3"; // for decompiling
 
     private Logger log = getLogger();
 
@@ -39,7 +43,6 @@ public class Main extends JavaPlugin {
     private String pluginVersion;
 
     private static int classesChanged = -1;
-    private static int port = 1234;
 
     private static List<String> prefixesToChange = new ArrayList<>();
 
@@ -51,9 +54,10 @@ public class Main extends JavaPlugin {
         instrumentation.addTransformer(
                 (classLoader, name, aClass, protectionDomain, bytes) -> {
                     // saving performance. Also lambdas will have null as name and aClass
-                    if (name == null || name.startsWith("java/") || name.startsWith("javax/") || name.startsWith("sun/")) {
+                    if (name != null && (name.startsWith("java/") || name.startsWith("javax/") || name.startsWith("sun/"))) {
                         return null;
                     }
+
                     try {
 
                         // catching version string
@@ -76,11 +80,17 @@ public class Main extends JavaPlugin {
                             }
                         }
 
-                        if (!isEligible(name))
-                            return null;
 
                         try {
-                            ConstantTable table = ConstantTable.readFrom(bytes);
+                            ConstantTable table = null;
+                            if(name == null) {
+                                table = ConstantTable.readFrom(bytes);
+                                name = table.getSelf().getName().getContentString();
+                            }
+                            if (!isEligible(name))
+                                return null;
+                            if(table == null)
+                                table = ConstantTable.readFrom(bytes);
                             Set<Integer> referencedByString = table.getConstantsOfType(Constant.StringConstant.class).map(Constant.StringConstant::getReferenceId).collect(Collectors.toSet());
                             class Holder {private int i;}
                             Holder h = new Holder();
@@ -92,10 +102,10 @@ public class Main extends JavaPlugin {
                                         if (toTest.length() == 0)
                                             return false;
                                         toTest = t2.getO2().charAt(0) == 'L' ? t2.getO2().substring(1) : t2.getO2();
-                                        return (toTest.startsWith("net/minecraft/server/v") || toTest.startsWith("org/bukkit/craftbukkit/v"));
+                                        return (toTest.contains("net/minecraft/server/v") || toTest.startsWith("org/bukkit/craftbukkit/v"));
                                     })
                                     .forEach(t2 -> {
-                                        String newVersion = t2.getO2().replaceAll("(^[L]?(?:net/minecraft/server/)|(?:org/bukkit/craftbukkit/))(v[a-zA-Z0-9_]+)", "$1" + versionString); //could weekly builds contain other letters? Better safe than sorry
+                                        String newVersion = t2.getO2().replaceAll("((?:net/minecraft/server/)|(?:org/bukkit/craftbukkit/))(v[a-zA-Z0-9_]+)", "$1" + versionString); //could weekly builds contain other letters? Better safe than sorry
                                         if(!t2.getO2().equals(newVersion)) {
                                             t2.getO1().setContent(newVersion.getBytes());
                                             h.i++;
@@ -104,10 +114,13 @@ public class Main extends JavaPlugin {
                             if(h.i != 0) {
                                 classesChanged++;
                                 SelfCommunication.updated++;
+                                synchronized (SelfCommunication.modified) {
+                                    SelfCommunication.modified.add(name);
+                                }
                             }
                             return table.recompile();
                         } catch (Throwable t) {
-                            staticLog.severe("Could not modify " + name.replace('/', '.') + " because of " + t);
+                            staticLog.severe("[CrossClass] Could not modify " + (name == null ? "[UNKNOWN LAMBDA]" : name.replace('/', '.')) + " because of " + t);
                             t.printStackTrace();
                         }
                         return null;
@@ -119,19 +132,17 @@ public class Main extends JavaPlugin {
                     }
                 },true
         );
-        //SelfCommunication.openSocket(port);
     }
 
-    static PluginData getLocalPluginData() {
-        return new PluginData(versionString,classesChanged);
-    }
 
 
     private static boolean isEligible(String name) { //todo implement logarithmic solution
-        for (String s : prefixesToChange) {
+        for(String s : blockedPrefixes)
+            if(name.startsWith(s))
+                return false;
+        for (String s : prefixesToChange)
             if(name.startsWith(s))
                 return true;
-        }
         return false;
     }
 
@@ -171,24 +182,21 @@ public class Main extends JavaPlugin {
     }
 
     public static synchronized void printBytes(byte[] toPrint) {
-        //byte[] out = new byte[toPrint.length];
-        //System.arraycopy(toPrint,0,out,0,toPrint.length);
         StringBuilder builder = new StringBuilder(toPrint.length * 3);
         boolean redmode = false;
-        for (int i = 0; i < toPrint.length; i++) {
-            if(validChar((char) toPrint[i])) {
-                if(!redmode) {
+        for (byte aToPrint : toPrint) {
+            if (validChar((char) aToPrint)) {
+                if (!redmode) {
                     builder.append(ConsoleColors.RED_BRIGHT);
                     redmode = true;
                 }
-                builder.append((char) toPrint[i]);
-            }
-            else {
-                if(redmode) {
+                builder.append((char) aToPrint);
+            } else {
+                if (redmode) {
                     builder.append(ConsoleColors.RESET);
                     redmode = false;
                 }
-                builder.append("[").append(toPrint[i]).append("]");
+                builder.append("[").append(aToPrint).append("]");
             }
         }
         if(redmode)
@@ -222,29 +230,34 @@ public class Main extends JavaPlugin {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(pluginVersion == null)
             pluginVersion = getConfig().getString("version");
-        sender.sendMessage(new String[]{
-                ChatColor.BLUE+"###########> CrossClass <###########",
-                ChatColor.BLUE+"CrossClass compatibility plugin. Redefines bytecode for all configured plugins. "+ChatColor.GRAY+"By ZainlessBrombie",
-                ChatColor.BLUE+"Version: "+pluginVersion,
-                ChatColor.BLUE+"["+prefixesToChange.size()+"] prefixes loaded from config.",
-                ChatColor.BLUE+"["+blockedPrefixes.size()+"] prefixes are blocked.",
-                ChatColor.BLUE + "Server version: " + SelfCommunication.versionString,
-                ChatColor.BLUE + "[" + SelfCommunication.updated + "] classes have been edited and reassembled."
-        });
-        /*
-        this was my response to the issue of different classloaders. Lets keep it around, just in case
-        getServer().getScheduler().runTaskAsynchronously(this,() -> {
-            try {
-                PluginData data = SelfCommunication.poll();
-                sender.sendMessage(new String[] {
-                        ChatColor.BLUE + "Server version: " + data.getVersionString(),
-                        ChatColor.BLUE + "[" + data.getClassesProcessed() + "] classes have been edited and reassembled."
-                });
-            } catch (IOException e) {
-                sender.sendMessage(ChatColor.RED+"Uh oh umm... I seem to be unable to talk to myself. Error: "+e);
-                e.printStackTrace();
+
+        if(args.length > 0) {
+            if(args[0].equalsIgnoreCase("list")) {
+                sender.sendMessage(ChatColor.BLUE+"The following classes have been modified:");
+                synchronized (SelfCommunication.modified) {
+                    SelfCommunication.modified.forEach(str -> sender.sendMessage(" + "+str));
+                }
+                sender.sendMessage(ChatColor.BLUE+"==========================================");
+                return true;
             }
-        });*/
+        }
+
+        String wrench = new String(new byte[] {(byte) 0xF0, (byte) 0x9F, (byte) 0x94, (byte) 0xA7});
+        //String decor = (sender instanceof ConsoleCommandSender ? " " + new String(new byte[] {(byte) 0xF0, (byte) 0x9F, (byte) 0x94, (byte) 0xA7}) : "");
+        String decor = (sender instanceof ConsoleCommandSender) ? " \u2699 "+wrench+" \u2699  " : " ";
+        sender.sendMessage(new String[]{
+                ChatColor.AQUA+"[==============>"+ChatColor.YELLOW+decor+"CrossClass"+decor+ChatColor.AQUA+"==============>]",
+                //"Gear 1 "+'\u2699',
+                ChatColor.AQUA+" > CrossClass compatibility plugin! "+ChatColor.GRAY+"By ZainlessBrombie.",
+                ChatColor.AQUA+" > "+ChatColor.WHITE+"Forget version incompatibility:",
+                ChatColor.AQUA+" > "+ChatColor.WHITE+"Reassembles class code for "+ChatColor.BLUE+ChatColor.BOLD+"a"+ChatColor.DARK_GREEN+ChatColor.BOLD+"l"+ChatColor.DARK_RED+ChatColor.BOLD+"l "+ChatColor.RESET+"configured plugins. ",
+                ChatColor.AQUA+" > Version: "+ChatColor.WHITE+getDescription().getVersion(),
+                ChatColor.AQUA+" > Server version: \"" + ChatColor.WHITE + SelfCommunication.versionString + ChatColor.AQUA + "\"",
+                ChatColor.AQUA+" > "+ChatColor.YELLOW+"["+prefixesToChange.size()+"]"+ChatColor.WHITE+" prefixes loaded from config.",
+                ChatColor.AQUA+" > "+ChatColor.YELLOW+"["+blockedPrefixes.size()+"]"+ChatColor.WHITE+" prefixes are blocked.",
+                ChatColor.AQUA+" > "+ChatColor.YELLOW+"[" + SelfCommunication.updated + "]"+ChatColor.WHITE+" classes have been edited and reassembled."
+        });
+
         return true;
     }
 
@@ -269,27 +282,6 @@ public class Main extends JavaPlugin {
     public void onEnable() {
         super.onEnable();
         log.info("Enabled crossClass plugin. Current status of replacer: "+status+" ");
-    }
-
-
-    private static byte[] byteReplace(byte[] source, byte[] what, byte[] by) {
-        byte[] ret = new byte[source.length];
-        System.arraycopy(source,0,ret,0,source.length);
-        for (int i = 0; i < ret.length; i++) {
-            if(match(ret,what,i)) {
-                System.arraycopy(by, 0, ret, i, by.length);
-            }
-
-        }
-        return ret;
-    }
-
-    private static boolean match(byte[] where, byte[] what, int index) {
-        for(int i = 0; i < what.length || i + index >= where.length;i++) {
-            if(where[index + i] != what[i])
-                return false;
-        }
-        return true;
     }
 
 
@@ -337,7 +329,7 @@ public class Main extends JavaPlugin {
                 }
             }
             else
-                log.info("tools.jar already present, not loading");
+                log.info("[CrossClass] tools.jar already present, not loading");
 
             URLClassLoader bukkitLoader;
             try {

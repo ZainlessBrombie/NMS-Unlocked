@@ -46,6 +46,35 @@ public class ConstantTable {
         return constants;
     }
 
+    /**
+     * Gets the pool entry by it's index. Indices start at 1 and may be shifted by Long and Double entries taking two table indices. Use this method when referring to pool entries
+     */
+    public Constant getTableEntry(int poolIndex) {
+        for(int i = poolIndex - 1 < constants.size() ? poolIndex - 1 : constants.size() - 1; i >= 0; i--) {
+            Constant candidate = constants.get(i);
+            if(candidate.getTableIndex() == poolIndex)
+                return candidate;
+            int skip = (candidate.getTableIndex() - poolIndex) / 2 - 1;
+            if(skip > 0)
+                i -= skip;
+        }
+        throw new IndexOutOfBoundsException("The pool entry "+poolIndex+" does not exist.");
+    }
+
+    /**
+     * Get the table index of the entry describing the class itself.
+     */
+    public int getSelfIndex() {
+        return (original[tableEndIndex + 2] & 0xff) * 0x100 + (original[tableEndIndex + 3] & 0xff);
+    }
+
+    public Constant.ClassConstant getSelf() {
+        Constant ret = getTableEntry(getSelfIndex());
+        if(ret instanceof Constant.ClassConstant)
+            return (Constant.ClassConstant) ret;
+        throw new RuntimeException("Internal class data corruption: Self describing class at index "+getSelfIndex()+" is not of type ClassConstant (is "+ret.getClass()+")");
+    }
+
     @SuppressWarnings("unchecked")
     public <T extends Constant> Stream<T> getConstantsOfType(Class<T> c) {
         return constants.stream().filter(constant -> c.isAssignableFrom(constant.getClass())).map(o -> (T)o);
