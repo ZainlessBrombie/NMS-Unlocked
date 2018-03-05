@@ -33,7 +33,7 @@ public class Main extends JavaPlugin {
 
     private Logger log = getLogger();
 
-    private static Logger staticLog = Logger.getLogger("NMS Unlocked");
+    private static Logger staticLog = Logger.getLogger("NMSUnlocked");
 
     private static PluginStatus status = PluginStatus.NOT_LOADED;
 
@@ -43,12 +43,12 @@ public class Main extends JavaPlugin {
 
     private static int classesChanged = -1;
 
-    private static List<String> prefixesToChange = new ArrayList<>();
+    //private static List<String> prefixesToChange = new ArrayList<>();
 
-    private static List<String> blockedPrefixes = new ArrayList<>();
+    //private static List<String> blockedPrefixes = new ArrayList<>();
 
     public static void agentmain(String agentArgs, Instrumentation instrumentation) {
-        staticLog.info("[CrossClass] Starting. If this message occurs after any other plugin has loaded, start this plugin as a javaagent");
+        staticLog.info("[NMSUnlocked] Starting. If this message occurs after any other plugin has loaded, start this plugin as a javaagent");
         classesChanged = 0;
         instrumentation.addTransformer(
                 (classLoader, name, aClass, protectionDomain, bytes) -> {
@@ -68,12 +68,12 @@ public class Main extends JavaPlugin {
                                         String preVersionString = stack[stack.length - i].getClassName().substring("net.minecraft.server.".length());
                                         versionString = preVersionString.substring(0, preVersionString.indexOf("."));
                                         SelfCommunication.versionString = versionString;
-                                        System.out.println("[CrossClass] found version number '" + versionString + "'");
+                                        System.out.println("[NMSUnlocked] found version number '" + versionString + "'");
                                         break;
                                     }
                                 }
                             } catch (Throwable t) {
-                                staticLog.severe("[CrossClass] Could not read version number from stack. This is unusual.");
+                                staticLog.severe("[NMSUnlocked] Could not read version number from stack. This is unusual.");
                                 t.printStackTrace();
                                 return null;
                             }
@@ -119,13 +119,13 @@ public class Main extends JavaPlugin {
                             }
                             return table.recompile();
                         } catch (Throwable t) {
-                            staticLog.severe("[CrossClass] Could not modify " + (name == null ? "[UNKNOWN LAMBDA]" : name.replace('/', '.')) + " because of " + t);
+                            staticLog.severe("[NMSUnlocked] Could not modify " + (name == null ? "[UNKNOWN LAMBDA]" : name.replace('/', '.')) + " because of " + t);
                             t.printStackTrace();
                         }
                         return null;
                     } catch (Throwable t) {
-                        staticLog.severe("[CrossClass] An unknown error occurred: "+t);
-                        staticLog.severe("[CrossClass] Please let the dev know about this");
+                        staticLog.severe("[NMSUnlocked] An unknown error occurred: "+t);
+                        staticLog.severe("[NMSUnlocked] Please let the dev know about this");
                         t.printStackTrace();
                         return null;
                     }
@@ -136,13 +136,15 @@ public class Main extends JavaPlugin {
 
 
     private static boolean isEligible(String name) { //todo implement logarithmic solution
-        for(String s : blockedPrefixes)
-            if(name.startsWith(s))
-                return false;
-        for (String s : prefixesToChange)
-            if(name.startsWith(s))
-                return true;
-        return false;
+        synchronized (SelfCommunication.lock) {
+            for(String s : SelfCommunication.prefixesToBlock)
+                if(name.startsWith(s))
+                    return false;
+            for (String s : SelfCommunication.prefixesToChange)
+                if(name.startsWith(s))
+                    return true;
+            return false;
+        }
     }
 
     private static void loadConfig() {
@@ -150,7 +152,7 @@ public class Main extends JavaPlugin {
             File pluginFolder = new File(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile(),"nmsUnlocked");
             pluginFolder.mkdir();
             File confFile = new File(pluginFolder,"conf.txt");
-            List<String> configLines = Arrays.asList("#config file for CrossClass. All lines starting with 'prefix: ' (note the whitespace) add a qualifying prefix.",
+            List<String> configLines = Arrays.asList("#config file for NMSUnlocked. All lines starting with 'prefix: ' (note the whitespace) add a qualifying prefix.",
                     "#if a class that is being loaded matches at least one of the listed prefixes, all non string occurrences of version strings will be changed.",
                     "#example:",
                     "#prefix: com.aplugin",
@@ -164,18 +166,20 @@ public class Main extends JavaPlugin {
                 Files.write(confFile.toPath(),configLines,StandardOpenOption.CREATE);
             else
                 configLines = Files.readAllLines(confFile.toPath());
-            configLines.stream()
-                    .filter(line -> line.startsWith("prefix: "))
-                    .map(line -> line.substring("prefix: ".length()).replace('.','/'))
-                    .forEach(prefixesToChange::add);
-            configLines.stream()
-                    .filter(line -> line.startsWith("prefixdeny :"))
-                    .map(line -> line.substring("prefixdeny: ".length()).replace('.','/'))
-                    .forEach(blockedPrefixes::add);
-            staticLog.info("[CrossClass] loaded "+prefixesToChange.size()+" prefix_es");
-            staticLog.info("[CrossClass] loaded "+blockedPrefixes.size()+" blocked prefix_es");
+            synchronized (SelfCommunication.lock) {
+                configLines.stream()
+                        .filter(line -> line.startsWith("prefix: "))
+                        .map(line -> line.substring("prefix: ".length()).replace('.', '/'))
+                        .forEach(SelfCommunication.prefixesToChange::add);
+                configLines.stream()
+                        .filter(line -> line.startsWith("prefixdeny :"))
+                        .map(line -> line.substring("prefixdeny: ".length()).replace('.', '/'))
+                        .forEach(SelfCommunication.prefixesToBlock::add);
+            }
+            staticLog.info("[NMSUnlocked] loaded "+SelfCommunication.prefixesToChange.size()+" prefix_es");
+            staticLog.info("[NMSUnlocked] loaded "+SelfCommunication.prefixesToBlock.size()+" blocked prefix_es");
         } catch (URISyntaxException | IOException e) {
-            staticLog.severe("[CrossClass] could not read config because of "+e);
+            staticLog.severe("[NMSUnlocked] could not read config because of "+e);
             e.printStackTrace();
         }
     }
@@ -211,17 +215,23 @@ public class Main extends JavaPlugin {
 
     static {
         try {
-            loadConfig();
-            start();
+            Logger log = Logger.getLogger("NMSUnlocked");
+            if (Main.class.getClassLoader().getClass().getSimpleName().equalsIgnoreCase("PluginClassLoader")) {
+                log.info("[NMSUnlocked] Loading in PluginClassLoader");
+                start();
+            } else {
+                loadConfig();
+                log.info("[NMSUnlocked] Is not loading in PluginClassLoader, will not start from here. (this is normal, you should get this message once per startup)");
+            }
         } catch (URISyntaxException e) {
-            staticLog.severe("[CrossClass] This is weird. I got a "+e.getClass().getSimpleName()+" check if there are uncommon characters in your file path, like whitespaces");
+            staticLog.severe("[NMSUnlocked] This is weird. I got a "+e.getClass().getSimpleName()+" check if there are uncommon characters in your file path, like whitespaces");
             e.printStackTrace();
         }
     }
 
 
     public static void premain(String args,Instrumentation instrumentation) {
-        staticLog.severe("Activating via premain (Java Agent)");
+        staticLog.info("Activating via premain (Java Agent)");
         agentmain(args,instrumentation);
     }
 
@@ -233,13 +243,13 @@ public class Main extends JavaPlugin {
             if (args.length == 0)
                 sender.sendMessage(new String[]{
                         "",
-                        ChatColor.AQUA + "[==============>" + ChatColor.YELLOW + " CrossClass " + ChatColor.AQUA + "==============>]",
-                        ChatColor.AQUA + " > CrossClass compatibility plugin! " + ChatColor.GRAY + "By ZainlessBrombie.",
+                        ChatColor.AQUA + "[==============>" + ChatColor.YELLOW + " NMSUnlocked " + ChatColor.AQUA + "==============>]",
+                        ChatColor.AQUA + " > NMSUnlocked compatibility plugin! " + ChatColor.GRAY + "By ZainlessBrombie.",
                         ChatColor.AQUA + " > " + ChatColor.WHITE + "Forget version incompatibility:",
                         ChatColor.AQUA + " > " + ChatColor.WHITE + "Reassembles class code for " + ChatColor.BLUE + ChatColor.BOLD + "a" + ChatColor.DARK_GREEN + ChatColor.BOLD + "l" + ChatColor.DARK_RED + ChatColor.BOLD + "l " + ChatColor.RESET + "configured plugins. ",
                         ChatColor.YELLOW + " > You are seeing the reduced output as you do not have",
                         ChatColor.YELLOW + " > the nmsunlocked.status permission",
-                        ChatColor.AQUA + "__________________________________________",
+                        ChatColor.AQUA + "___________________________________________",
                         ""
                 });
             else
@@ -265,21 +275,21 @@ public class Main extends JavaPlugin {
         String decor = (sender instanceof ConsoleCommandSender) ? " \u2699 "+wrench+" \u2699  " : " ";
         sender.sendMessage(new String[]{
                 "",
-                ChatColor.AQUA+"[==============>"+ChatColor.YELLOW+decor+"CrossClass"+decor+ChatColor.AQUA+"==============>]",
+                ChatColor.AQUA+"[==============>"+ChatColor.YELLOW+decor+"NMSUnlocked"+decor+ChatColor.AQUA+"==============>]",
                 //"Gear 1 "+'\u2699',
-                ChatColor.AQUA+" > CrossClass compatibility plugin! "+ChatColor.GRAY+"By ZainlessBrombie.",
+                ChatColor.AQUA+" > NMSUnlocked compatibility plugin! "+ChatColor.GRAY+"By ZainlessBrombie.",
                 ChatColor.AQUA+" > "+ChatColor.WHITE+"Forget version incompatibility:",
                 ChatColor.AQUA+" > "+ChatColor.WHITE+"Reassembles class code for "+ChatColor.BLUE+ChatColor.BOLD+"a"+ChatColor.DARK_GREEN+ChatColor.BOLD+"l"+ChatColor.DARK_RED+ChatColor.BOLD+"l "+ChatColor.RESET+"configured plugins. ",
                 ChatColor.AQUA+" > Version: "+ChatColor.WHITE+getDescription().getVersion(),
                 ChatColor.AQUA+" > Server version: \"" + ChatColor.WHITE + SelfCommunication.versionString + ChatColor.AQUA + "\"",
-                ChatColor.AQUA+" > "+ChatColor.YELLOW+"["+prefixesToChange.size()+"]"+ChatColor.WHITE+" prefixes loaded from config.",
-                ChatColor.AQUA+" > "+ChatColor.YELLOW+"["+blockedPrefixes.size()+"]"+ChatColor.WHITE+" prefixes are blocked.",
+                ChatColor.AQUA+" > "+ChatColor.YELLOW+"["+SelfCommunication.prefixesToChange.size()+"]"+ChatColor.WHITE+" prefixes loaded from config.",
+                ChatColor.AQUA+" > "+ChatColor.YELLOW+"["+SelfCommunication.prefixesToBlock.size()+"]"+ChatColor.WHITE+" prefixes are blocked.",
                 ChatColor.AQUA+" > "+ChatColor.YELLOW+"[" + SelfCommunication.updated + "]"+ChatColor.WHITE+" classes have been edited and reassembled."
         });
-        if(blockedPrefixes.size() == 0 && prefixesToChange.contains(""))
+        if(SelfCommunication.prefixesToBlock.size() == 0 && SelfCommunication.prefixesToChange.contains(""))
             sender.sendMessage(ChatColor.GOLD+" > All plugins are being reassembled! =)");
         sender.sendMessage(new String[]{
-                ChatColor.AQUA+"__________________________________________",
+                ChatColor.AQUA+"___________________________________________",
                 ""
         });
 
@@ -300,34 +310,28 @@ public class Main extends JavaPlugin {
     @Override
     public void onDisable() {
         super.onDisable();
-        log.warning("Disabling crossClass will NOT turn off its replacing capabilities");
+        log.warning("Disabling NMSUnlocked plugin will NOT turn off its replacing capabilities");
     }
 
     @Override
     public void onEnable() {
         super.onEnable();
-        log.info("Enabled crossClass plugin. Current status of replacer: "+status+" ");
+        log.info("Enabled NMSUnlocked plugin. Current status of replacer: "+status+" ");
     }
 
 
     private static void start() throws URISyntaxException {
-        Logger log = Logger.getLogger("CrossClass");
-        if (Main.class.getClassLoader().getClass().getSimpleName().equalsIgnoreCase("PluginClassLoader")) {
-            log.info("[CrossClass] Loading in PluginClassLoader");
-        } else {
-            log.info("[CrossClass] Is not loading in PluginClassLoader, will not start from here. (this is normal, you should get this message once per startup)");
-            return;
-        }
+        Logger log = Logger.getLogger("NMSUnlocked");
         try {
             Class.forName("com.sun.tools.attach.VirtualMachine");
         } catch (ClassNotFoundException e) {
-            log.info("[CrossClass] Could not find lib, loading dynamically");
+            log.info("[NMSUnlocked] Could not find lib, loading dynamically");
 
             File dir = new File(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile(),"nmsUnlocked");
             dir.mkdir();
             File jarFile = new File(dir,"tools.jar");
             if(!jarFile.exists()) {
-                log.info("[CrossClass] Writing tools.jar");
+                log.info("[NMSUnlocked] Writing tools.jar");
                 InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("tools.jar");
                 byte[] raw;
                 try {
@@ -337,7 +341,7 @@ public class Main extends JavaPlugin {
                         throw new RuntimeException("Reading the tools.jar failed in a weird way: length was " + raw.length);
                     }
                 } catch (IOException e1) {
-                    log.severe("[CrossClass] Could not read tools.jar resource!");
+                    log.severe("[NMSUnlocked] Could not read tools.jar resource!");
                     e1.printStackTrace();
                     error();
                     return;
@@ -347,20 +351,20 @@ public class Main extends JavaPlugin {
                 try {
                     Files.write(jarFile.toPath(), raw, StandardOpenOption.CREATE);
                 } catch (IOException e1) {
-                    log.severe("[CrossClass] Could not write tools.jar. Exiting.");
+                    log.severe("[NMSUnlocked] Could not write tools.jar. Exiting.");
                     e1.printStackTrace();
                     error();
                     return;
                 }
             }
             else
-                log.info("[CrossClass] tools.jar already present, not loading");
+                log.info("[NMSUnlocked] tools.jar already present, not loading");
 
             URLClassLoader bukkitLoader;
             try {
                 bukkitLoader = (URLClassLoader) Main.class.getClassLoader();
             } catch (ClassCastException castException) {
-                log.severe("The bukkit class loader is not an instance of URLClassLoader. Jeez! What version of minecraft are we at? Greetings from the past i guess! Oh also this plugin won't work now, at least not this version.");
+                log.severe("[NMSUnlocked] The bukkit class loader is not an instance of URLClassLoader. Jeez! What version of minecraft are we at? Greetings from the past i guess! Oh also this plugin won't work now, at least not this version.");
                 error();
                 throw castException;
             }
@@ -379,7 +383,7 @@ public class Main extends JavaPlugin {
         status = PluginStatus.ERROR;
         ReplacerAgent.loadAgent(log);
         status = PluginStatus.RUNNING;
-        log.info("[CrossClass] Loaded with "+Main.class.getClassLoader().getClass());
+        log.info("[NMSUnlocked] Loaded with "+Main.class.getClassLoader().getClass());
     }
 
     private static void error() {
