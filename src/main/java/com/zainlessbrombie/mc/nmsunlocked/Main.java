@@ -98,10 +98,7 @@ public class Main extends JavaPlugin {
                                     .map(utf8Constant -> new T2<>(utf8Constant, new String(utf8Constant.getContent())))
                                     .filter(t2 -> {
                                         String toTest = t2.getO2();
-                                        if (toTest.length() == 0)
-                                            return false;
-                                        toTest = t2.getO2().charAt(0) == 'L' ? t2.getO2().substring(1) : t2.getO2();
-                                        return (toTest.contains("net/minecraft/server/v") || toTest.startsWith("org/bukkit/craftbukkit/v"));
+                                        return (toTest.contains("net/minecraft/server/v") || toTest.contains("org/bukkit/craftbukkit/v"));
                                     })
                                     .forEach(t2 -> {
                                         String newVersion = t2.getO2().replaceAll("((?:net/minecraft/server/)|(?:org/bukkit/craftbukkit/))(v[a-zA-Z0-9_]+)", "$1" + versionString); //could weekly builds contain other letters? Better safe than sorry
@@ -167,6 +164,8 @@ public class Main extends JavaPlugin {
             else
                 configLines = Files.readAllLines(confFile.toPath());
             synchronized (SelfCommunication.lock) {
+                SelfCommunication.prefixesToBlock.clear();
+                SelfCommunication.prefixesToChange.clear();
                 configLines.stream()
                         .filter(line -> line.startsWith("prefix: "))
                         .map(line -> line.substring("prefix: ".length()).replace('.', '/'))
@@ -310,13 +309,15 @@ public class Main extends JavaPlugin {
     @Override
     public void onDisable() {
         super.onDisable();
-        log.warning("Disabling NMSUnlocked plugin will NOT turn off its replacing capabilities");
+        log.warning("Disabling NMSUnlocked plugin will NOT turn off its replacing capabilities. The config will be reloaded on next pluginStart, however plugins will only be fully affected by that config change if they are manually unloaded and loaded again (not to be confused with reenabled)");
     }
 
     @Override
     public void onEnable() {
         super.onEnable();
         log.info("Enabled NMSUnlocked plugin. Current status of replacer: "+status+" ");
+        loadConfig();
+        log.info("Loaded config.");
     }
 
 
