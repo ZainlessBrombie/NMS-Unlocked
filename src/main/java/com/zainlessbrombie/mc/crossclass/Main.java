@@ -34,7 +34,7 @@ public class Main extends JavaPlugin {
 
     private Logger log = getLogger();
 
-    private static Logger staticLog = Logger.getLogger("CrossClass");
+    private static Logger staticLog = Logger.getLogger("NMS Unlocked");
 
     private static PluginStatus status = PluginStatus.NOT_LOADED;
 
@@ -54,7 +54,7 @@ public class Main extends JavaPlugin {
         instrumentation.addTransformer(
                 (classLoader, name, aClass, protectionDomain, bytes) -> {
                     // saving performance. Also lambdas will have null as name and aClass
-                    if (name != null && (name.startsWith("java/") || name.startsWith("javax/") || name.startsWith("sun/"))) {
+                    if (name != null && (name.startsWith("java/") || name.startsWith("javax/") || name.startsWith("sun/") || name.startsWith("net/minecraft") || name.startsWith("org/bukkit"))) {
                         return null;
                     }
 
@@ -148,7 +148,7 @@ public class Main extends JavaPlugin {
 
     private static void loadConfig() {
         try {
-            File pluginFolder = new File(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile(),"crossClass");
+            File pluginFolder = new File(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile(),"nmsUnlocked");
             pluginFolder.mkdir();
             File confFile = new File(pluginFolder,"conf.txt");
             List<String> configLines = Arrays.asList("#config file for CrossClass. All lines starting with 'prefix: ' (note the whitespace) add a qualifying prefix.",
@@ -158,7 +158,7 @@ public class Main extends JavaPlugin {
                     "#a line with only 'prefix: ' will match any and all classes. If you encounter no issues, you could leave it at that.",
                     "prefix: ",
                     "",
-                    "#if you don't want a certain plugin to be changed, you can simply add it with prefixdeny. The prefixes java, javax and sun are always blocked for performance reasons",
+                    "#if you don't want a certain plugin to be changed, you can simply add it with prefixdeny. The prefixes java, javax, sun, org.bukkit and net.minecraft are always blocked for performance reasons (and why wouldn't they)",
                     "#prefixdeny: "
             );
             if(!confFile.exists())
@@ -222,7 +222,7 @@ public class Main extends JavaPlugin {
 
 
     public static void premain(String args,Instrumentation instrumentation) {
-        staticLog.severe("Activating via premain");
+        staticLog.severe("Activating via premain (Java Agent)");
         agentmain(args,instrumentation);
     }
 
@@ -230,22 +230,42 @@ public class Main extends JavaPlugin {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(pluginVersion == null)
             pluginVersion = getConfig().getString("version");
+        if(!sender.hasPermission("nmsunlocked.status")) {
+            if (args.length == 0)
+                sender.sendMessage(new String[]{
+                        "",
+                        ChatColor.AQUA + "[==============>" + ChatColor.YELLOW + " CrossClass " + ChatColor.AQUA + "==============>]",
+                        ChatColor.AQUA + " > CrossClass compatibility plugin! " + ChatColor.GRAY + "By ZainlessBrombie.",
+                        ChatColor.AQUA + " > " + ChatColor.WHITE + "Forget version incompatibility:",
+                        ChatColor.AQUA + " > " + ChatColor.WHITE + "Reassembles class code for " + ChatColor.BLUE + ChatColor.BOLD + "a" + ChatColor.DARK_GREEN + ChatColor.BOLD + "l" + ChatColor.DARK_RED + ChatColor.BOLD + "l " + ChatColor.RESET + "configured plugins. ",
+                        ChatColor.YELLOW + " > You are seeing the reduced output as you do not have",
+                        ChatColor.YELLOW + " > the nmsunlocked.status permission",
+                        ChatColor.AQUA + "__________________________________________",
+                        ""
+                });
+            else
+                sender.sendMessage(ChatColor.RED+"You don't have permission (nmsunlocked.status)");
+            return true;
+        }
 
         if(args.length > 0) {
             if(args[0].equalsIgnoreCase("list")) {
+                sender.sendMessage(ChatColor.BLUE+"==========================================");
                 sender.sendMessage(ChatColor.BLUE+"The following classes have been modified:");
                 synchronized (SelfCommunication.modified) {
                     SelfCommunication.modified.forEach(str -> sender.sendMessage(" + "+str));
                 }
                 sender.sendMessage(ChatColor.BLUE+"==========================================");
-                return true;
+            } else {
+                sender.sendMessage(ChatColor.BLUE+"usage: /nmsunlocked list");
             }
+            return true;
         }
 
         String wrench = new String(new byte[] {(byte) 0xF0, (byte) 0x9F, (byte) 0x94, (byte) 0xA7});
-        //String decor = (sender instanceof ConsoleCommandSender ? " " + new String(new byte[] {(byte) 0xF0, (byte) 0x9F, (byte) 0x94, (byte) 0xA7}) : "");
         String decor = (sender instanceof ConsoleCommandSender) ? " \u2699 "+wrench+" \u2699  " : " ";
         sender.sendMessage(new String[]{
+                "",
                 ChatColor.AQUA+"[==============>"+ChatColor.YELLOW+decor+"CrossClass"+decor+ChatColor.AQUA+"==============>]",
                 //"Gear 1 "+'\u2699',
                 ChatColor.AQUA+" > CrossClass compatibility plugin! "+ChatColor.GRAY+"By ZainlessBrombie.",
@@ -256,6 +276,12 @@ public class Main extends JavaPlugin {
                 ChatColor.AQUA+" > "+ChatColor.YELLOW+"["+prefixesToChange.size()+"]"+ChatColor.WHITE+" prefixes loaded from config.",
                 ChatColor.AQUA+" > "+ChatColor.YELLOW+"["+blockedPrefixes.size()+"]"+ChatColor.WHITE+" prefixes are blocked.",
                 ChatColor.AQUA+" > "+ChatColor.YELLOW+"[" + SelfCommunication.updated + "]"+ChatColor.WHITE+" classes have been edited and reassembled."
+        });
+        if(blockedPrefixes.size() == 0 && prefixesToChange.contains(""))
+            sender.sendMessage(ChatColor.GOLD+" > All plugins are being reassembled! =)");
+        sender.sendMessage(new String[]{
+                ChatColor.AQUA+"__________________________________________",
+                ""
         });
 
         return true;
@@ -275,7 +301,7 @@ public class Main extends JavaPlugin {
     @Override
     public void onDisable() {
         super.onDisable();
-        log.info("Disabling crossClass will NOT turn off its replacing capabilities");
+        log.warning("Disabling crossClass will NOT turn off its replacing capabilities");
     }
 
     @Override
@@ -290,7 +316,7 @@ public class Main extends JavaPlugin {
         if (Main.class.getClassLoader().getClass().getSimpleName().equalsIgnoreCase("PluginClassLoader")) {
             log.info("[CrossClass] Loading in PluginClassLoader");
         } else {
-            log.info("[CrossClass] Is not loading in PluginClassLoader, will not start from here! (this is normal, you should get this message once per startup)");
+            log.info("[CrossClass] Is not loading in PluginClassLoader, will not start from here. (this is normal, you should get this message once per startup)");
             return;
         }
         try {
@@ -298,7 +324,7 @@ public class Main extends JavaPlugin {
         } catch (ClassNotFoundException e) {
             log.info("[CrossClass] Could not find lib, loading dynamically");
 
-            File dir = new File(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile(),"crossClass");
+            File dir = new File(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile(),"nmsUnlocked");
             dir.mkdir();
             File jarFile = new File(dir,"tools.jar");
             if(!jarFile.exists()) {
@@ -351,6 +377,7 @@ public class Main extends JavaPlugin {
                 return;
             }
         }
+        status = PluginStatus.ERROR;
         ReplacerAgent.loadAgent(log);
         status = PluginStatus.RUNNING;
         log.info("[CrossClass] Loaded with "+Main.class.getClassLoader().getClass());

@@ -6,7 +6,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
- * Created by mathis on 03.03.18 14:03.
+ * Copyright ZainlessBrombie 2018
+ * Do not copy or redistribute.
  */
 public abstract class Constant {
 

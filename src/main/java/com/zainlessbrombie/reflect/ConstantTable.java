@@ -7,7 +7,8 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Created by mathis on 03.03.18 12:33.
+ * Copyright ZainlessBrombie 2018
+ * Do not copy or redistribute.
  */
 public class ConstantTable {
 

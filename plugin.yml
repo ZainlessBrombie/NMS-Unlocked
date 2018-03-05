@@ -1,13 +1,13 @@
-name: CrossClass
+name: NMSUnlocked
 main: com.zainlessbrombie.mc.crossclass.Main
 version: ${pluginVersion}
 authors: [ZainlessBrombie]
 load: STARTUP
 commands:
-   crossclass:
-      description: Base
-      usage: /crossclass
+   nmsunlocked:
+      description: View plugin information such as version and how many and which classes have been Reassembled
+      usage: '"/nmsunlocked"  and  "/nmsunlocked list"'
 permissions:
-  crossclass.status:
+  nmsunlocked.status:
     description: Enables full viewing of the plugin status. Anybody who does not have this permission will only see a reduced version.
     default: op
