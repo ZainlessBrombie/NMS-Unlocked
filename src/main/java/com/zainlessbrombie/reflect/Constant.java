@@ -1,7 +1,5 @@
 package com.zainlessbrombie.reflect;
 
-import com.zainlessbrombie.mc.crossclass.Main;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 

@@ -54,8 +54,8 @@
                             <addClasspath>true</addClasspath>
                         </manifest>
                         <manifestEntries>
-                            <Agent-Class>com.zainlessbrombie.mc.crossclass.Main</Agent-Class>
-                            <premain-class>com.zainlessbrombie.mc.crossclass.Main</premain-class>
+                            <Agent-Class>com.zainlessbrombie.mc.nmsunlocked.Main</Agent-Class>
+                            <premain-class>com.zainlessbrombie.mc.nmsunlocked.Main</premain-class>
                             <Can-Retransform-Classes>true</Can-Retransform-Classes>
                             <Can-Redefine-Classes>true</Can-Redefine-Classes>
                         </manifestEntries>

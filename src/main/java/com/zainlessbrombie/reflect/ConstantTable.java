@@ -1,7 +1,5 @@
 package com.zainlessbrombie.reflect;
 
-import com.zainlessbrombie.mc.crossclass.Main;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;

@@ -1,4 +1,4 @@
-package com.zainlessbrombie.mc.crossclass;
+package com.zainlessbrombie.mc.nmsunlocked;
 
 
 import com.sun.tools.attach.AgentInitializationException;

@@ -1,4 +1,4 @@
-package com.zainlessbrombie.mc.crossclass;
+package com.zainlessbrombie.mc.nmsunlocked;
 
 import java.util.ArrayList;
 import java.util.List;

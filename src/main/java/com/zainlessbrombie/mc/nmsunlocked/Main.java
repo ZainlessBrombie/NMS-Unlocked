@@ -1,7 +1,6 @@
-package com.zainlessbrombie.mc.crossclass;
+package com.zainlessbrombie.mc.nmsunlocked;
 
 
-import com.zainlessbrombie.mc.crossclass.data.PluginData;
 import com.zainlessbrombie.reflect.Constant;
 import com.zainlessbrombie.reflect.ConstantTable;
 import org.bukkit.ChatColor;
@@ -158,7 +157,7 @@ public class Main extends JavaPlugin {
                     "#a line with only 'prefix: ' will match any and all classes. If you encounter no issues, you could leave it at that.",
                     "prefix: ",
                     "",
-                    "#if you don't want a certain plugin to be changed, you can simply add it with prefixdeny. The prefixes java, javax, sun, org.bukkit and net.minecraft are always blocked for performance reasons (and why wouldn't they)",
+                    "#if you don't want a certain plugin to be changed, you can simply add it with prefixdeny. The prefixes java, javax, sun, org.bukkit and net.minecraft are always blocked for performance reasons (also, why should they be changed ;) )",
                     "#prefixdeny: "
             );
             if(!confFile.exists())

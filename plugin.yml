@@ -1,5 +1,5 @@
 name: NMSUnlocked
-main: com.zainlessbrombie.mc.crossclass.Main
+main: com.zainlessbrombie.mc.nmsunlockedd.Main
 version: ${pluginVersion}
 authors: [ZainlessBrombie]
 load: STARTUP

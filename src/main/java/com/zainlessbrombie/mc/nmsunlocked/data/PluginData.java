@@ -1,4 +1,4 @@
-package com.zainlessbrombie.mc.crossclass.data;
+package com.zainlessbrombie.mc.nmsunlocked.data;
 
 /**
  * Created by mathis on 03.03.18 22:01.
