@@ -276,9 +276,12 @@ public class Main extends JavaPlugin {
                 systemType = "windows";
             else
                 systemType = "osx";
+
             File jarFile = new File(dir,"tools.jar");
 
             if(!jarFile.exists()) { //write tools.jar if not already present
+                if(systemType.equals("osx"))
+                    throw new RuntimeException("OSX IS CURRENTLY NOT SUPPORTED - SORRY. You can place your own tools.jar in the plugins/nmsUnlocked folder, it should work");
                 log.info("[NMSUnlocked] Writing tools.jar for system type "+systemType);
                 InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("tools/"+systemType+"/tools.jar");
                 byte[] raw;
