@@ -81,14 +81,15 @@
 
     </dependencies>
 
-    <profiles>
+    <profiles> <!-- copy the tools.jar from your java/libs/ folder into the project home dir -->
         <profile>
             <id>linux</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <toolsjar>/usr/lib/jvm/java-8-openjdk-amd64/lib/tools.jar</toolsjar>
+                <!--<toolsjar>/usr/lib/jvm/java-8-openjdk-amd64/lib/tools.jar</toolsjar>-->
+                <toolsjar>${project.basedir}/tools.jar</toolsjar>
             </properties>
             <dependencies>
                 <dependency>
