@@ -15,12 +15,21 @@ import java.io.InputStream;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.*;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+
+import com.zainlessbrombie.mc.nmsunlocked.util.T2;
+
+import static com.zainlessbrombie.mc.nmsunlocked.util.ByteUtil.readAllFromStream;
 
 
 /**
@@ -41,7 +50,6 @@ public class Main extends JavaPlugin {
 
     private String pluginVersion;
 
-    private static int classesChanged = -1;
 
     //private static List<String> prefixesToChange = new ArrayList<>();
 
@@ -49,7 +57,6 @@ public class Main extends JavaPlugin {
 
     public static void agentmain(String agentArgs, Instrumentation instrumentation) {
         staticLog.info("[NMSUnlocked] Starting. If this message occurs after any other plugin has loaded, start this plugin as a javaagent");
-        classesChanged = 0;
         instrumentation.addTransformer(
                 (classLoader, name, aClass, protectionDomain, bytes) -> {
                     // saving performance. Also lambdas will have null as name and aClass
@@ -108,7 +115,6 @@ public class Main extends JavaPlugin {
                                         }
                                     });
                             if(h.i != 0) {
-                                classesChanged++;
                                 SelfCommunication.updated++;
                                 synchronized (SelfCommunication.modified) {
                                     SelfCommunication.modified.add(name);
@@ -183,34 +189,9 @@ public class Main extends JavaPlugin {
         }
     }
 
-    public static synchronized void printBytes(byte[] toPrint) {
-        StringBuilder builder = new StringBuilder(toPrint.length * 3);
-        boolean redmode = false;
-        for (byte aToPrint : toPrint) {
-            if (validChar((char) aToPrint)) {
-                if (!redmode) {
-                    builder.append(ConsoleColors.RED_BRIGHT);
-                    redmode = true;
-                }
-                builder.append((char) aToPrint);
-            } else {
-                if (redmode) {
-                    builder.append(ConsoleColors.RESET);
-                    redmode = false;
-                }
-                builder.append("[").append(aToPrint).append("]");
-            }
-        }
-        if(redmode)
-            builder.append(ConsoleColors.RESET);
-        System.out.println(builder);
-    }
 
-    private static boolean validChar(char c) {
-        int min = 0x20;
-        int max = 0x7e;
-        return c >= min && c <= max || c == 0xa;
-    }
+
+
 
     static {
         try {
@@ -295,15 +276,7 @@ public class Main extends JavaPlugin {
         return true;
     }
 
-    private static byte[] readAllFromStream(InputStream inputStream) throws IOException { // i love java. most of the time.
-        byte [] ret = new byte[inputStream.available()];
-        int pointer = 0;
-        int read;
-        while((read = inputStream.read(ret,pointer,ret.length - pointer)) > 0) {
-            pointer += read;
-        }
-        return ret;
-    }
+
 
 
     @Override
@@ -396,104 +369,7 @@ public class Main extends JavaPlugin {
         NOT_LOADED, RUNNING, ERROR
     }
 
-    private static class T2<TA,TB> {
-        private TA o1;
-        private TB o2;
 
-        public T2(TA o1, TB o2) {
-            this.o1 = o1;
-            this.o2 = o2;
-        }
 
-        public TA getO1() {
-            return o1;
-        }
 
-        public void setO1(TA o1) {
-            this.o1 = o1;
-        }
-
-        public TB getO2() {
-            return o2;
-        }
-
-        public void setO2(TB o2) {
-            this.o2 = o2;
-        }
-    }
-
-    private class ConsoleColors {
-        // Reset
-        public static final String RESET = "\033[0m";  // Text Reset
-
-        // Regular Colors
-        public static final String BLACK = "\033[0;30m";   // BLACK
-        public static final String RED = "\033[0;31m";     // RED
-        public static final String GREEN = "\033[0;32m";   // GREEN
-        public static final String YELLOW = "\033[0;33m";  // YELLOW
-        public static final String BLUE = "\033[0;34m";    // BLUE
-        public static final String PURPLE = "\033[0;35m";  // PURPLE
-        public static final String CYAN = "\033[0;36m";    // CYAN
-        public static final String WHITE = "\033[0;37m";   // WHITE
-
-        // Bold
-        public static final String BLACK_BOLD = "\033[1;30m";  // BLACK
-        public static final String RED_BOLD = "\033[1;31m";    // RED
-        public static final String GREEN_BOLD = "\033[1;32m";  // GREEN
-        public static final String YELLOW_BOLD = "\033[1;33m"; // YELLOW
-        public static final String BLUE_BOLD = "\033[1;34m";   // BLUE
-        public static final String PURPLE_BOLD = "\033[1;35m"; // PURPLE
-        public static final String CYAN_BOLD = "\033[1;36m";   // CYAN
-        public static final String WHITE_BOLD = "\033[1;37m";  // WHITE
-
-        // Underline
-        public static final String BLACK_UNDERLINED = "\033[4;30m";  // BLACK
-        public static final String RED_UNDERLINED = "\033[4;31m";    // RED
-        public static final String GREEN_UNDERLINED = "\033[4;32m";  // GREEN
-        public static final String YELLOW_UNDERLINED = "\033[4;33m"; // YELLOW
-        public static final String BLUE_UNDERLINED = "\033[4;34m";   // BLUE
-        public static final String PURPLE_UNDERLINED = "\033[4;35m"; // PURPLE
-        public static final String CYAN_UNDERLINED = "\033[4;36m";   // CYAN
-        public static final String WHITE_UNDERLINED = "\033[4;37m";  // WHITE
-
-        // Background
-        public static final String BLACK_BACKGROUND = "\033[40m";  // BLACK
-        public static final String RED_BACKGROUND = "\033[41m";    // RED
-        public static final String GREEN_BACKGROUND = "\033[42m";  // GREEN
-        public static final String YELLOW_BACKGROUND = "\033[43m"; // YELLOW
-        public static final String BLUE_BACKGROUND = "\033[44m";   // BLUE
-        public static final String PURPLE_BACKGROUND = "\033[45m"; // PURPLE
-        public static final String CYAN_BACKGROUND = "\033[46m";   // CYAN
-        public static final String WHITE_BACKGROUND = "\033[47m";  // WHITE
-
-        // High Intensity
-        public static final String BLACK_BRIGHT = "\033[0;90m";  // BLACK
-        public static final String RED_BRIGHT = "\033[0;91m";    // RED
-        public static final String GREEN_BRIGHT = "\033[0;92m";  // GREEN
-        public static final String YELLOW_BRIGHT = "\033[0;93m"; // YELLOW
-        public static final String BLUE_BRIGHT = "\033[0;94m";   // BLUE
-        public static final String PURPLE_BRIGHT = "\033[0;95m"; // PURPLE
-        public static final String CYAN_BRIGHT = "\033[0;96m";   // CYAN
-        public static final String WHITE_BRIGHT = "\033[0;97m";  // WHITE
-
-        // Bold High Intensity
-        public static final String BLACK_BOLD_BRIGHT = "\033[1;90m"; // BLACK
-        public static final String RED_BOLD_BRIGHT = "\033[1;91m";   // RED
-        public static final String GREEN_BOLD_BRIGHT = "\033[1;92m"; // GREEN
-        public static final String YELLOW_BOLD_BRIGHT = "\033[1;93m";// YELLOW
-        public static final String BLUE_BOLD_BRIGHT = "\033[1;94m";  // BLUE
-        public static final String PURPLE_BOLD_BRIGHT = "\033[1;95m";// PURPLE
-        public static final String CYAN_BOLD_BRIGHT = "\033[1;96m";  // CYAN
-        public static final String WHITE_BOLD_BRIGHT = "\033[1;97m"; // WHITE
-
-        // High Intensity backgrounds
-        public static final String BLACK_BACKGROUND_BRIGHT = "\033[0;100m";// BLACK
-        public static final String RED_BACKGROUND_BRIGHT = "\033[0;101m";// RED
-        public static final String GREEN_BACKGROUND_BRIGHT = "\033[0;102m";// GREEN
-        public static final String YELLOW_BACKGROUND_BRIGHT = "\033[0;103m";// YELLOW
-        public static final String BLUE_BACKGROUND_BRIGHT = "\033[0;104m";// BLUE
-        public static final String PURPLE_BACKGROUND_BRIGHT = "\033[0;105m"; // PURPLE
-        public static final String CYAN_BACKGROUND_BRIGHT = "\033[0;106m";  // CYAN
-        public static final String WHITE_BACKGROUND_BRIGHT = "\033[0;107m";   // WHITE
-    }
 }
