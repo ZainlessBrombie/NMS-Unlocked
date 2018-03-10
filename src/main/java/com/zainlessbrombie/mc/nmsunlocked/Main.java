@@ -1,6 +1,8 @@
 package com.zainlessbrombie.mc.nmsunlocked;
 
 
+import com.zainlessbrombie.mc.nmsunlocked.config.ConfigLoader;
+import com.zainlessbrombie.mc.nmsunlocked.util.T2;
 import com.zainlessbrombie.reflect.Constant;
 import com.zainlessbrombie.reflect.ConstantTable;
 import org.bukkit.ChatColor;
@@ -21,13 +23,9 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-
-import com.zainlessbrombie.mc.nmsunlocked.util.T2;
 
 import static com.zainlessbrombie.mc.nmsunlocked.util.ByteUtil.readAllFromStream;
 
@@ -51,9 +49,6 @@ public class Main extends JavaPlugin {
     private String pluginVersion;
 
 
-    //private static List<String> prefixesToChange = new ArrayList<>();
-
-    //private static List<String> blockedPrefixes = new ArrayList<>();
 
     public static void agentmain(String agentArgs, Instrumentation instrumentation) {
         staticLog.info("[NMSUnlocked] Starting. If this message occurs after any other plugin has loaded, start this plugin as a javaagent");
@@ -115,8 +110,8 @@ public class Main extends JavaPlugin {
                                         }
                                     });
                             if(h.i != 0) {
-                                SelfCommunication.updated++;
                                 synchronized (SelfCommunication.modified) {
+                                    SelfCommunication.updated++;
                                     SelfCommunication.modified.add(name);
                                 }
                             }
@@ -150,48 +145,11 @@ public class Main extends JavaPlugin {
         }
     }
 
-    private static void loadConfig() {
-        try {
-            File pluginFolder = new File(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile(),"nmsUnlocked");
-            pluginFolder.mkdir();
-            File confFile = new File(pluginFolder,"conf.txt");
-            List<String> configLines = Arrays.asList("#config file for NMSUnlocked. All lines starting with 'prefix: ' (note the whitespace) add a qualifying prefix.",
-                    "#if a class that is being loaded matches at least one of the listed prefixes, all non string occurrences of version strings will be changed.",
-                    "#example:",
-                    "#prefix: com.aplugin",
-                    "#a line with only 'prefix: ' will match any and all classes. If you encounter no issues, you could leave it at that.",
-                    "prefix: ",
-                    "",
-                    "#if you don't want a certain plugin to be changed, you can simply add it with prefixdeny. The prefixes java, javax, sun, org.bukkit and net.minecraft are always blocked for performance reasons (also, why should they be changed ;) )",
-                    "#prefixdeny: "
-            );
-            if(!confFile.exists())
-                Files.write(confFile.toPath(),configLines,StandardOpenOption.CREATE);
-            else
-                configLines = Files.readAllLines(confFile.toPath());
-            synchronized (SelfCommunication.lock) {
-                SelfCommunication.prefixesToBlock.clear();
-                SelfCommunication.prefixesToChange.clear();
-                configLines.stream()
-                        .filter(line -> line.startsWith("prefix: "))
-                        .map(line -> line.substring("prefix: ".length()).replace('.', '/'))
-                        .forEach(SelfCommunication.prefixesToChange::add);
-                configLines.stream()
-                        .filter(line -> line.startsWith("prefixdeny :"))
-                        .map(line -> line.substring("prefixdeny: ".length()).replace('.', '/'))
-                        .forEach(SelfCommunication.prefixesToBlock::add);
-            }
-            staticLog.info("[NMSUnlocked] loaded "+SelfCommunication.prefixesToChange.size()+" prefix_es");
-            staticLog.info("[NMSUnlocked] loaded "+SelfCommunication.prefixesToBlock.size()+" blocked prefix_es");
-        } catch (URISyntaxException | IOException e) {
-            staticLog.severe("[NMSUnlocked] could not read config because of "+e);
-            e.printStackTrace();
-        }
-    }
 
 
 
 
+    // ############# INIT ############# //
 
     static {
         try {
@@ -200,7 +158,7 @@ public class Main extends JavaPlugin {
                 log.info("[NMSUnlocked] Loading in PluginClassLoader");
                 start();
             } else {
-                loadConfig();
+                ConfigLoader.loadConfig();
                 log.info("[NMSUnlocked] Is not loading in PluginClassLoader, will not start from here. (this is normal, you should get this message once per startup)");
             }
         } catch (URISyntaxException e) {
@@ -210,15 +168,20 @@ public class Main extends JavaPlugin {
     }
 
 
+    // started via java -javaagent:
     public static void premain(String args,Instrumentation instrumentation) {
         staticLog.info("Activating via premain (Java Agent)");
         agentmain(args,instrumentation);
     }
 
+
+    // status command
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(pluginVersion == null)
             pluginVersion = getConfig().getString("version");
+
+        // Send for normal user
         if(!sender.hasPermission("nmsunlocked.status")) {
             if (args.length == 0)
                 sender.sendMessage(new String[]{
@@ -237,6 +200,7 @@ public class Main extends JavaPlugin {
             return true;
         }
 
+        // Has permission. List.
         if(args.length > 0) {
             if(args[0].equalsIgnoreCase("list")) {
                 sender.sendMessage(ChatColor.BLUE+"==========================================");
@@ -248,30 +212,29 @@ public class Main extends JavaPlugin {
             } else {
                 sender.sendMessage(ChatColor.BLUE+"usage: /nmsunlocked list");
             }
-            return true;
+        } else { // Status decorated for the console
+            String wrench = new String(new byte[]{(byte) 0xF0, (byte) 0x9F, (byte) 0x94, (byte) 0xA7});
+            String decor = (sender instanceof ConsoleCommandSender) ? " \u2699 " + wrench + " \u2699  " : " ";
+            sender.sendMessage(new String[]{
+                    "",
+                    ChatColor.AQUA + "[==============>" + ChatColor.YELLOW + decor + "NMSUnlocked" + decor + ChatColor.AQUA + "==============>]",
+                    //"Gear 1 "+'\u2699',
+                    ChatColor.AQUA + " > NMSUnlocked compatibility plugin! " + ChatColor.GRAY + "By ZainlessBrombie.",
+                    ChatColor.AQUA + " > " + ChatColor.WHITE + "Forget version incompatibility:",
+                    ChatColor.AQUA + " > " + ChatColor.WHITE + "Reassembles class code for " + ChatColor.BLUE + ChatColor.BOLD + "a" + ChatColor.DARK_GREEN + ChatColor.BOLD + "l" + ChatColor.DARK_RED + ChatColor.BOLD + "l " + ChatColor.RESET + "configured plugins. ",
+                    ChatColor.AQUA + " > Version: " + ChatColor.WHITE + getDescription().getVersion(),
+                    ChatColor.AQUA + " > Server version: \"" + ChatColor.WHITE + SelfCommunication.versionString + ChatColor.AQUA + "\"",
+                    ChatColor.AQUA + " > " + ChatColor.YELLOW + "[" + SelfCommunication.prefixesToChange.size() + "]" + ChatColor.WHITE + " prefixes loaded from config.",
+                    ChatColor.AQUA + " > " + ChatColor.YELLOW + "[" + SelfCommunication.prefixesToBlock.size() + "]" + ChatColor.WHITE + " prefixes are blocked.",
+                    ChatColor.AQUA + " > " + ChatColor.YELLOW + "[" + SelfCommunication.updated + "]" + ChatColor.WHITE + " classes have been edited and reassembled."
+            });
+            if (SelfCommunication.prefixesToBlock.size() == 0 && SelfCommunication.prefixesToChange.contains(""))
+                sender.sendMessage(ChatColor.GOLD + " > All plugins are being reassembled! =)");
+            sender.sendMessage(new String[]{
+                    ChatColor.AQUA + "___________________________________________",
+                    ""
+            });
         }
-
-        String wrench = new String(new byte[] {(byte) 0xF0, (byte) 0x9F, (byte) 0x94, (byte) 0xA7});
-        String decor = (sender instanceof ConsoleCommandSender) ? " \u2699 "+wrench+" \u2699  " : " ";
-        sender.sendMessage(new String[]{
-                "",
-                ChatColor.AQUA+"[==============>"+ChatColor.YELLOW+decor+"NMSUnlocked"+decor+ChatColor.AQUA+"==============>]",
-                //"Gear 1 "+'\u2699',
-                ChatColor.AQUA+" > NMSUnlocked compatibility plugin! "+ChatColor.GRAY+"By ZainlessBrombie.",
-                ChatColor.AQUA+" > "+ChatColor.WHITE+"Forget version incompatibility:",
-                ChatColor.AQUA+" > "+ChatColor.WHITE+"Reassembles class code for "+ChatColor.BLUE+ChatColor.BOLD+"a"+ChatColor.DARK_GREEN+ChatColor.BOLD+"l"+ChatColor.DARK_RED+ChatColor.BOLD+"l "+ChatColor.RESET+"configured plugins. ",
-                ChatColor.AQUA+" > Version: "+ChatColor.WHITE+getDescription().getVersion(),
-                ChatColor.AQUA+" > Server version: \"" + ChatColor.WHITE + SelfCommunication.versionString + ChatColor.AQUA + "\"",
-                ChatColor.AQUA+" > "+ChatColor.YELLOW+"["+SelfCommunication.prefixesToChange.size()+"]"+ChatColor.WHITE+" prefixes loaded from config.",
-                ChatColor.AQUA+" > "+ChatColor.YELLOW+"["+SelfCommunication.prefixesToBlock.size()+"]"+ChatColor.WHITE+" prefixes are blocked.",
-                ChatColor.AQUA+" > "+ChatColor.YELLOW+"[" + SelfCommunication.updated + "]"+ChatColor.WHITE+" classes have been edited and reassembled."
-        });
-        if(SelfCommunication.prefixesToBlock.size() == 0 && SelfCommunication.prefixesToChange.contains(""))
-            sender.sendMessage(ChatColor.GOLD+" > All plugins are being reassembled! =)");
-        sender.sendMessage(new String[]{
-                ChatColor.AQUA+"___________________________________________",
-                ""
-        });
 
         return true;
     }
@@ -289,22 +252,26 @@ public class Main extends JavaPlugin {
     public void onEnable() {
         super.onEnable();
         log.info("Enabled NMSUnlocked plugin. Current status of replacer: "+status+" ");
-        loadConfig();
+        ConfigLoader.loadConfig();
         log.info("Loaded config.");
     }
 
 
+    /**
+     * Register the Agent. Call only from PluginClassLoader loaded class.
+     */
     private static void start() throws URISyntaxException {
         Logger log = Logger.getLogger("NMSUnlocked");
         try {
-            Class.forName("com.sun.tools.attach.VirtualMachine");
+            Class.forName("com.sun.tools.attach.VirtualMachine"); //test if the tools.jar is already loaded (unusual)
         } catch (ClassNotFoundException e) {
             log.info("[NMSUnlocked] Could not find lib, loading dynamically");
 
             File dir = new File(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile(),"nmsUnlocked");
-            dir.mkdir();
+            dir.mkdir(); //The plugin's personal dir
             File jarFile = new File(dir,"tools.jar");
-            if(!jarFile.exists()) {
+
+            if(!jarFile.exists()) { //write tools.jar if not already present
                 log.info("[NMSUnlocked] Writing tools.jar");
                 InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("tools.jar");
                 byte[] raw;
@@ -334,19 +301,21 @@ public class Main extends JavaPlugin {
             else
                 log.info("[NMSUnlocked] tools.jar already present, not loading");
 
+
             URLClassLoader bukkitLoader;
             try {
                 bukkitLoader = (URLClassLoader) Main.class.getClassLoader();
             } catch (ClassCastException castException) {
-                log.severe("[NMSUnlocked] The bukkit class loader is not an instance of URLClassLoader. Jeez! What version of minecraft are we at? Greetings from the past i guess! Oh also this plugin won't work now, at least not this version.");
+                // I sincerely hope this will never happen (and it probably won't)
+                log.severe("[NMSUnlocked] The bukkit class loader is not an instance of URLClassLoader. Jeez! What version of minecraft are we at? Greetings from the past I guess! Oh also this plugin won't work now, at least not this version.");
                 error();
                 throw castException;
             }
             try {
+                // add the tools.jar
                 Method m = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
                 m.setAccessible(true);
                 m.invoke(bukkitLoader,new File(dir,"tools.jar").toURI().toURL());
-
             } catch (NoSuchMethodException | IllegalAccessException | MalformedURLException | InvocationTargetException e1) {
                 log.severe("An error has occurred trying to load a required jar. Exiting.");
                 e1.printStackTrace();
@@ -355,7 +324,7 @@ public class Main extends JavaPlugin {
             }
         }
         status = PluginStatus.ERROR;
-        ReplacerAgent.loadAgent(log);
+        ReplacerAgent.loadAgent(log); // has to be in separate class, as the classes used there are loaded only in this method
         status = PluginStatus.RUNNING;
         log.info("[NMSUnlocked] Loaded with "+Main.class.getClassLoader().getClass());
     }
