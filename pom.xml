@@ -6,7 +6,7 @@
 
     <groupId>com.zainlessbrombie.mc</groupId>
     <artifactId>nmsunlocked</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
     <properties>
         <pluginVersion>${version}</pluginVersion>
     </properties>
@@ -30,7 +30,7 @@
                 <filtering>false</filtering>
                 <directory>./</directory>
                 <includes>
-                    <include>tools.jar</include>
+                    <include>tools/**</include>
                 </includes>
             </resource>
         </resources>
@@ -88,8 +88,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <!--<toolsjar>/usr/lib/jvm/java-8-openjdk-amd64/lib/tools.jar</toolsjar>-->
-                <toolsjar>${project.basedir}/tools.jar</toolsjar>
+                <toolsjar>${project.basedir}/tools/linux/tools.jar</toolsjar>
             </properties>
             <dependencies>
                 <dependency>

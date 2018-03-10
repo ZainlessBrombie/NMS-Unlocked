@@ -269,11 +269,18 @@ public class Main extends JavaPlugin {
 
             File dir = new File(new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getParentFile(),"nmsUnlocked");
             dir.mkdir(); //The plugin's personal dir
+            String systemType = System.getProperty("os.name").toLowerCase();
+            if(systemType.contains("linux"))
+                systemType = "linux";
+            else if(systemType.contains("windows"))
+                systemType = "windows";
+            else
+                systemType = "osx";
             File jarFile = new File(dir,"tools.jar");
 
             if(!jarFile.exists()) { //write tools.jar if not already present
-                log.info("[NMSUnlocked] Writing tools.jar");
-                InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("tools.jar");
+                log.info("[NMSUnlocked] Writing tools.jar for system type "+systemType);
+                InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("tools/"+systemType+"/tools.jar");
                 byte[] raw;
                 try {
                     raw = readAllFromStream(inputStream);
