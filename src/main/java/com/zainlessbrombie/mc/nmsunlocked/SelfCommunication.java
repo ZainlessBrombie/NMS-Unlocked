@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by mathis on 03.03.18 21:26.
+ * Created by ŹainlessBrombie on 03.03.18 21:26.
  */
 public class SelfCommunication { //they are not in the same classloader
 

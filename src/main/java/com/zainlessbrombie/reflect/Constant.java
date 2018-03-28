@@ -5,7 +5,7 @@ import java.lang.reflect.Method;
 
 /**
  * Copyright ZainlessBrombie 2018
- * Do not copy or redistribute.
+ * Do not copy/redistribute.
  */
 public abstract class Constant {
 

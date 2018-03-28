@@ -3,7 +3,7 @@ package com.zainlessbrombie.mc.nmsunlocked.data;
 /**
  * Created by mathis on 03.03.18 22:01.
  */
-public class PluginData {
+public class PluginData { // currently not in use
     private String versionString;
     private int classesProcessed;
 

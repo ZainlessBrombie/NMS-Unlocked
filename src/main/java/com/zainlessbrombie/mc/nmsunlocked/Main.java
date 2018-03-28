@@ -36,7 +36,7 @@ import static com.zainlessbrombie.mc.nmsunlocked.util.ByteUtil.readAllFromStream
  */
 public class Main extends JavaPlugin {
 
-    private static String DO_NOT_COPY="Thank you :) <3"; // for decompiling
+    private static String DO_NOT_COPY="Thank you :) <3"; // for decompiling :D
 
     private Logger log = getLogger();
 
@@ -82,27 +82,28 @@ public class Main extends JavaPlugin {
                         }
 
 
-                        try {
+                        try { //read the class code
                             ConstantTable table = null;
                             if(name == null) {
                                 table = ConstantTable.readFrom(bytes);
                                 name = table.getSelf().getName().getContentString();
                             }
-                            if (!isEligible(name))
+                            if (!isEligible(name)) // check if the name is matched / excluded by the config values
                                 return null;
                             if(table == null)
-                                table = ConstantTable.readFrom(bytes);
+                                table = ConstantTable.readFrom(bytes); // name was not null (Was not a lambda)
+                            // the following utf8 constants are strings and should therefor not be edited
                             Set<Integer> referencedByString = table.getConstantsOfType(Constant.StringConstant.class).map(Constant.StringConstant::getReferenceId).collect(Collectors.toSet());
                             class Holder {private int i;}
                             Holder h = new Holder();
                             table.getConstantsOfType(Constant.Utf8Constant.class)
                                     .filter(utf8Constant -> !referencedByString.contains(utf8Constant.getTableIndex()))
-                                    .map(utf8Constant -> new T2<>(utf8Constant, new String(utf8Constant.getContent())))
+                                    .map(utf8Constant -> new T2<>(utf8Constant, new String(utf8Constant.getContent()))) // no need to create that string twice
                                     .filter(t2 -> {
                                         String toTest = t2.getO2();
                                         return (toTest.contains("net/minecraft/server/v") || toTest.contains("org/bukkit/craftbukkit/v"));
                                     })
-                                    .forEach(t2 -> {
+                                    .forEach(t2 -> { // do the actual replacing
                                         String newVersion = t2.getO2().replaceAll("((?:net/minecraft/server/)|(?:org/bukkit/craftbukkit/))(v[a-zA-Z0-9_]+)", "$1" + versionString); //could weekly builds contain other letters? Better safe than sorry
                                         if(!t2.getO2().equals(newVersion)) {
                                             t2.getO1().setContent(newVersion.getBytes());
@@ -111,18 +112,18 @@ public class Main extends JavaPlugin {
                                     });
                             if(h.i != 0) {
                                 synchronized (SelfCommunication.modified) {
-                                    SelfCommunication.updated++;
+                                    SelfCommunication.updated++; // make sure the thing gets added to the... thing. For the status command.
                                     SelfCommunication.modified.add(name);
                                 }
                             }
-                            return table.recompile();
+                            return table.recompile(); // return the fresh and new code! :)
                         } catch (Throwable t) {
                             staticLog.severe("[NMSUnlocked] Could not modify " + (name == null ? "[UNKNOWN LAMBDA]" : name.replace('/', '.')) + " because of " + t);
                             t.printStackTrace();
                         }
                         return null;
                     } catch (Throwable t) {
-                        staticLog.severe("[NMSUnlocked] An unknown error occurred: "+t);
+                        staticLog.severe("[NMSUnlocked] An unknown error occurred: "+t); // oh, shit!
                         staticLog.severe("[NMSUnlocked] Please let the dev know about this");
                         t.printStackTrace();
                         return null;
@@ -133,7 +134,7 @@ public class Main extends JavaPlugin {
 
 
 
-    private static boolean isEligible(String name) { //todo implement logarithmic solution
+    private static boolean isEligible(String name) { // potentially implement logarithmic solution
         synchronized (SelfCommunication.lock) {
             for(String s : SelfCommunication.prefixesToBlock)
                 if(name.startsWith(s))
@@ -154,11 +155,11 @@ public class Main extends JavaPlugin {
     static {
         try {
             Logger log = Logger.getLogger("NMSUnlocked");
-            if (Main.class.getClassLoader().getClass().getSimpleName().equalsIgnoreCase("PluginClassLoader")) {
+            if (Main.class.getClassLoader().getClass().getSimpleName().equalsIgnoreCase("PluginClassLoader")) { // this gets loaded first.
                 log.info("[NMSUnlocked] Loading in PluginClassLoader");
                 start();
             } else {
-                ConfigLoader.loadConfig();
+                ConfigLoader.loadConfig(); // this time, the class was loaded for the actual java agent
                 log.info("[NMSUnlocked] Is not loading in PluginClassLoader, will not start from here. (this is normal, you should get this message once per startup)");
             }
         } catch (URISyntaxException e) {
@@ -179,7 +180,7 @@ public class Main extends JavaPlugin {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if(pluginVersion == null)
-            pluginVersion = getConfig().getString("version");
+            pluginVersion = getConfig().getString("version"); // this is mainly a leftover from a different communication style (evading classloader conflicts by not interfering and communicating via tcp.
 
         // Send for normal user
         if(!sender.hasPermission("nmsunlocked.status")) {
@@ -201,7 +202,7 @@ public class Main extends JavaPlugin {
         }
 
         // Has permission. List.
-        if(args.length > 0) {
+        if(args.length > 0) { // list of reloaded classes
             if(args[0].equalsIgnoreCase("list")) {
                 sender.sendMessage(ChatColor.BLUE+"==========================================");
                 sender.sendMessage(ChatColor.BLUE+"The following classes have been modified:");
@@ -212,7 +213,7 @@ public class Main extends JavaPlugin {
             } else {
                 sender.sendMessage(ChatColor.BLUE+"usage: /nmsunlocked list");
             }
-        } else { // Status decorated for the console
+        } else { // Status optionally decorated for the console
             String wrench = new String(new byte[]{(byte) 0xF0, (byte) 0x9F, (byte) 0x94, (byte) 0xA7});
             String decor = (sender instanceof ConsoleCommandSender) ? " \u2699 " + wrench + " \u2699  " : " ";
             sender.sendMessage(new String[]{
@@ -275,19 +276,19 @@ public class Main extends JavaPlugin {
             else if(systemType.contains("windows"))
                 systemType = "windows";
             else
-                systemType = "osx";
+                systemType = "osx"; // or is it darwin? I don't really use macs
 
             File jarFile = new File(dir,"tools.jar");
 
             if(!jarFile.exists()) { //write tools.jar if not already present
                 if(systemType.equals("osx"))
-                    throw new RuntimeException("OSX IS CURRENTLY NOT SUPPORTED - SORRY. You can place your own tools.jar in the plugins/nmsUnlocked folder, it should work");
+                    throw new RuntimeException("OSX IS CURRENTLY NOT SUPPORTED - SORRY. You can load the plugin via -javaagent or place your own tools.jar in the plugins/nmsUnlocked folder, it should work");
                 log.info("[NMSUnlocked] Writing tools.jar for system type "+systemType);
                 InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("tools/"+systemType+"/tools.jar");
                 byte[] raw;
                 try {
                     raw = readAllFromStream(inputStream);
-                    if (raw.length < 10000 || raw.length > 20000000) {
+                    if (raw.length < 10000 || raw.length > 20000000) { // roughly the size of the jar. If it's less or more, reading from the stream went wrong
                         error();
                         throw new RuntimeException("Reading the tools.jar failed in a weird way: length was " + raw.length);
                     }
@@ -300,7 +301,7 @@ public class Main extends JavaPlugin {
 
 
                 try {
-                    Files.write(jarFile.toPath(), raw, StandardOpenOption.CREATE);
+                    Files.write(jarFile.toPath(), raw, StandardOpenOption.CREATE); // save the tools.jar
                 } catch (IOException e1) {
                     log.severe("[NMSUnlocked] Could not write tools.jar. Exiting.");
                     e1.printStackTrace();
@@ -314,7 +315,7 @@ public class Main extends JavaPlugin {
 
             URLClassLoader bukkitLoader;
             try {
-                bukkitLoader = (URLClassLoader) Main.class.getClassLoader();
+                bukkitLoader = (URLClassLoader) Main.class.getClassLoader(); // now add the tools.jar so that the agent may be started
             } catch (ClassCastException castException) {
                 // I sincerely hope this will never happen (and it probably won't)
                 log.severe("[NMSUnlocked] The bukkit class loader is not an instance of URLClassLoader. Jeez! What version of minecraft are we at? Greetings from the past I guess! Oh also this plugin won't work now, at least not this version.");

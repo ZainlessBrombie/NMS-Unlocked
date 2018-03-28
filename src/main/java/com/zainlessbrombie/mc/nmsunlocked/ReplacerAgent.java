@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 /**
  * Created by mathis on 02.03.18 23:09.
  */
-public class ReplacerAgent {
+public class ReplacerAgent { // in separate class: must not be loaded before tools.jar is written and added to the classloader
 
     static void loadAgent(Logger log) {
         String nameOfRunningVM = ManagementFactory.getRuntimeMXBean().getName();

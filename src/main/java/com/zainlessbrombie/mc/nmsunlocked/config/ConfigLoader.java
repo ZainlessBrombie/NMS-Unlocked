@@ -20,7 +20,7 @@ public class ConfigLoader {
     private static Logger staticLog = Logger.getLogger("NMSUnlocked");
 
     /**
-     * This method must not be called from a PluginClassLoader loaded class before being called from the parent, or else SelfCommunication will be loaded for the PluginClassLoader and the parent class loader seperately.
+     * This method must not be called from a PluginClassLoader loaded class before being called from the parent, or else SelfCommunication will be loaded for the PluginClassLoader and the parent class loader separately.
      */
     public static void loadConfig() {
         try {
@@ -36,7 +36,7 @@ public class ConfigLoader {
                     "",
                     "#if you don't want a certain plugin to be changed, you can simply add it with prefixdeny. The prefixes java, javax, sun, org.bukkit and net.minecraft are always blocked for performance reasons (also, why should they be changed ;) )",
                     "#prefixdeny: "
-            );
+            ); // default config
             if(!confFile.exists())
                 Files.write(confFile.toPath(),configLines, StandardOpenOption.CREATE);
             else
