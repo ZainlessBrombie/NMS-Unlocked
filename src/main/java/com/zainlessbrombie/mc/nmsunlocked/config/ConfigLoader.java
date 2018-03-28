@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * Created by mathis on 10.03.18 12:14.
+ * Created by ZainlessBrombie on 10.03.18 12:14.
  */
 public class ConfigLoader {
 

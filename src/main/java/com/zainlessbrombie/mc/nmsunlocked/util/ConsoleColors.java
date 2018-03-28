@@ -1,9 +1,9 @@
 package com.zainlessbrombie.mc.nmsunlocked.util;
 
 /**
- * Created by mathis on 10.03.18 11:56.
+ * Created by ZainlessBrombie on 10.03.18 11:56.
  */
-public class ConsoleColors {
+public class ConsoleColors { // printing colors to the console - thank you stackoverflow
     // Reset
     public static final String RESET = "\033[0m";  // Text Reset
 

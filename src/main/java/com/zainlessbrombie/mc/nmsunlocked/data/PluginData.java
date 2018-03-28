@@ -1,7 +1,7 @@
 package com.zainlessbrombie.mc.nmsunlocked.data;
 
 /**
- * Created by mathis on 03.03.18 22:01.
+ * Created by ZainlessBrombie on 03.03.18 22:01.
  */
 public class PluginData { // currently not in use
     private String versionString;

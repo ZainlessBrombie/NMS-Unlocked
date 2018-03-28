@@ -1,7 +1,7 @@
 package com.zainlessbrombie.mc.nmsunlocked.util;
 
 /**
- * Created by mathis on 10.03.18 11:57.
+ * Created by ZainlessBrombie on 10.03.18 11:57.
  */
 public class T2<TA,TB> {
     private TA o1;

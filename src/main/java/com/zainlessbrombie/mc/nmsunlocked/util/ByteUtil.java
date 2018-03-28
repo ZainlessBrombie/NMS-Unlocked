@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Created by mathis on 10.03.18 11:57.
+ * Created by ZainlessBrombie on 10.03.18 11:57.
  */
-public class ByteUtil {
+public class ByteUtil { // reading form stream and printing bytes to console
     public static byte[] readAllFromStream(InputStream inputStream) throws IOException { // i love java. most of the time.
         byte [] ret = new byte[inputStream.available()];
         int pointer = 0;
