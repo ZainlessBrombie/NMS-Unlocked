@@ -49,7 +49,7 @@ public class ConfigLoader {
                         .map(line -> line.substring("prefix: ".length()).replace('.', '/'))
                         .forEach(SelfCommunication.prefixesToChange::add);
                 configLines.stream()
-                        .filter(line -> line.startsWith("prefixdeny :"))
+                        .filter(line -> line.startsWith("prefixdeny: "))
                         .map(line -> line.substring("prefixdeny: ".length()).replace('.', '/'))
                         .forEach(SelfCommunication.prefixesToBlock::add);
             }
