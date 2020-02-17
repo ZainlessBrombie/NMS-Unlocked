@@ -36,8 +36,6 @@ import static com.zainlessbrombie.mc.nmsunlocked.util.ByteUtil.readAllFromStream
  */
 public class Main extends JavaPlugin {
 
-    private static String DO_NOT_COPY="Thank you :) <3"; // for decompiling :D
-
     private Logger log = getLogger();
 
     private static Logger staticLog = Logger.getLogger("NMSUnlocked");
