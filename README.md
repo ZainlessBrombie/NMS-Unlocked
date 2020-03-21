@@ -1,4 +1,5 @@
 # NMS-Unlocked
+<i>This repository is, shall we say, hibernated for now. You're welcome to rip whatever code you need. Also this project is old and no longer complies with my quality standards :)</i>
 <h2>NMS Unlocked makes other minecraft plugins version interoperable</h2>
 
 This is a minecraft plugin that starts a java agent that reassembles other classes class code as they are being loaded to match the current version of minecraft!
